@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Worklogs Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            font-size: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        table.dataTable thead th {
+            white-space: nowrap;
+        }
+
+        /* Spinner styling */
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.3rem;
+        }
+
+        /* Modal styling */
+        #loadingModal .modal-dialog {
+            max-width: 100px;
+            margin: 0 auto;
+            margin-top: 20%;
+        }
+
+        .footer_hr {
+            margin: 0.3rem 0rem;
+            border: 1px;
+            border-top: var(--bs-border-width) solid;
+            opacity: 1;
+        }
+
+        /* Styling for the login/logout button */
+        .navbar {
+            margin-bottom: 20px;
+        }
+
+        .login-btn {
+            float: right;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation bar with Login/Logout button -->
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand">Jira Worklog Extractor</a>
+            <button id="loginLogoutBtn" class="btn btn-outline-primary login-btn">Login</button>
+        </div>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="container col-md-10">
+            <div class="text-center">
+                <span id="err_message" class="text-danger fs-6 lh-lg"></span>
+            </div>
+            <form id="worklogForm" class="mb-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="project_key" class="form-label">Project Key</label>
+                        <input type="text" class="form-control" id="project_key" placeholder="Enter project key">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="users" class="form-label">User IDs</label>
+                        <input type="text" class="form-control" id="users"
+                            placeholder="Enter user IDs (comma-separated)">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date">
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary w-20 mt-3">Fetch Worklogs</button>
+                </div>
+            </form>
+            <div class="text-center">
+                <span id="no_records" class="text-warning fs-6 lh-lg"></span>
+            </div>
+
+            <table id="worklogTable" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Ticket</th>
+                        <th>Summary</th>
+                        <th>Project Name</th>
+                        <th>Time Spent (hours)</th>
+                        <th>Started</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="4" class="text-end align-top">Total (hours):</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for login -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login to Jira</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="jiraEmail" class="form-label">Jira Email</label>
+                            <input type="email" class="form-control" id="jiraEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="jiraApiToken" class="form-label">Jira Api Token</label>
+                            <input type="password" class="form-control" id="jiraApiToken" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+        data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            var isLoggedIn = false; // Initial state, to be updated by the server or login status
+            var table = $('#worklogTable').DataTable({
+                "footerCallback": function (row, data, start, end, display) {
+                    var api = this.api();
+                    var intVal = function (i) {
+                        return typeof i === 'string' ? parseFloat(i) : (typeof i === 'number' ? i : 0);
+                    };
+                    var total = api.column(4).data().reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+                    var pageTotal = api.column(4, { page: 'current' }).data().reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+                    $(api.column(4).footer()).html(
+                        '<div class="text-center">Page Total: ' + pageTotal.toFixed(2) + ' </div><hr class="footer_hr" /><div class="text-center"> Total: ' + total.toFixed(2) + '</div>'
+                    );
+                }
+            });
+
+            // Check login status
+            function checkLoginStatus() {
+                // Call the server to verify if the user is logged in
+                $.get('/check_login', function (data) {
+                    isLoggedIn = data.logged_in;
+                    updateLoginButton();
+                    if (!isLoggedIn) {
+                        $('#loginModal').modal('show');
+                    }
+                });
+            }
+
+            checkLoginStatus();
+
+            // Update login/logout button text
+            function updateLoginButton() {
+                if (isLoggedIn) {
+                    $('#loginLogoutBtn').text('Logout').addClass('btn-outline-danger').removeClass('btn-outline-primary');
+                } else {
+                    $('#loginLogoutBtn').text('Login').addClass('btn-outline-primary').removeClass('btn-outline-danger');
+                }
+            }
+
+            // Handle login
+            $('#loginForm').on('submit', function (event) {
+                event.preventDefault();
+                var email = $('#jiraEmail').val();
+                var apiToken = $('#jiraApiToken').val();
+
+                // Send login request to server
+                $.ajax({
+                    url: '/login',  // Update the endpoint URL if necessary
+                    type: 'POST',
+                    contentType: 'application/json',  // Setting content type to JSON
+                    data: JSON.stringify({ email: email, api_token: apiToken }),  // Stringify the data to send it as JSON
+                    success: function (data) {
+                        if (data.success) {
+                            isLoggedIn = true;
+                            $('#loginModal').modal('hide');
+                            updateLoginButton();
+                        } else {
+                            alert('Login failed');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log('Error:', error);
+                        alert('An error occurred during login');
+                    }
+                });
+            });
+
+            // Handle logout
+            $('#loginLogoutBtn').on('click', function () {
+                if (isLoggedIn) {
+                    // Handle logout
+                    $.post('/logout', function (data) {
+                        if (data.success) {
+                            isLoggedIn = false;
+                            updateLoginButton();
+                        }
+                    });
+                } else {
+                    // Show login modal
+                    $('#loginModal').modal('show');
+                }
+            });
+
+            // Fetch worklogs when the form is submitted
+            $('#worklogForm').on('submit', function (event) {
+                event.preventDefault();
+
+                $('#err_message').text('')
+                $('#no_records').text('')
+
+                if (!isLoggedIn) {
+                    $('#err_message').text('You must be logged in to fetch worklogs.')
+                    return;
+                }
+
+                showModal();
+                table.clear();
+                var project_key = $('#project_key').val();
+                var users = $('#users').val();
+                var start_date = $('#start_date').val();
+                var end_date = $('#end_date').val();
+
+                fetch('/fetch_worklogs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ project_key, users, start_date, end_date }),
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        return Promise.reject(response); 
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            $('#err_message').text(data.error);
+                        } else {
+                            table.clear();
+
+                            if (Object.keys(data).length === 0) {
+                                $('#no_records').text('No records found');
+                            }
+
+                            for (var user in data) {
+                                data[user].worklogs.forEach(log => {
+                                    var timeSpentHours = (parseFloat(log.timeSpent) / 3600).toFixed(2); 
+                                    table.row.add([
+                                        data[user].displayName,
+                                        log.ticket,
+                                        log.summary,
+                                        log.projectName,
+                                        timeSpentHours,
+                                        log.started
+                                    ]).draw();
+                                });
+                            }
+
+                            table.columns.adjust().draw(); // Recalculate the subtotal
+
+                            hideModal();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        if (error.statusText === 'UNAUTHORIZED') {
+                            $('#err_message').text('You must be logged in to fetch worklogs.')
+                        } else {
+                            $('#err_message').text('Something went wrong. Please try again.')
+                        }
+                        hideModal();
+                    })
+
+                });
+            });
+
+        
+        function hideModal() {
+
+            setTimeout(() => {
+                const modal_el = document.querySelector('#loadingModal');
+                const modal_obj = bootstrap.Modal.getInstance(modal_el);
+
+                if (modal_obj == null) {
+                    return;
+                }
+
+                modal_obj.hide();
+            }, 500);
+        }
+
+        function showModal() {
+            const modal_el = document.querySelector('#loadingModal');
+            let modal_obj = bootstrap.Modal.getInstance(modal_el);
+
+            if (modal_obj == null) {
+                modal_obj = new bootstrap.Modal(modal_el, {
+                    backdrop: 'static'
+                });
+            }
+
+            modal_obj.show();
+        }
+    </script>
+</body>
+
+</html>
