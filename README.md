@@ -7,7 +7,7 @@ This Python application extracts worklogs from Jira using Jira's REST API (v3) w
 - Connects to Jira using Jira REST API v3.
 - Fetches worklogs for specified date ranges.
 - Filters worklogs by user.
-- Outputs worklogs in a readable JSON format.
+- Export the results as CSV
   
 ## Prerequisites
 - Python 3.8 or higher
@@ -38,7 +38,7 @@ This Python application extracts worklogs from Jira using Jira's REST API (v3) w
 -   Gunicorn (for running the Flask app in production)
 
 4. **Configuration:**
-    Update the `config.json` file in the root directory with the following content:
+    Rename `config.json.template` to `config.json` and update the following content:
 ```json
 	{
 		"DEBUG": true,
