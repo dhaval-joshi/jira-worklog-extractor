@@ -51,7 +51,7 @@ def login():
 
     except Exception as e:
         logging.error(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'An internal error has occurred!'}), 500
 
 
 @app.route('/logout', methods=['POST'])
@@ -100,7 +100,7 @@ def fetch_worklogs():
 
     except Exception as e:
         logging.error(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'An internal error has occurred!'}), 500
 
 
 def get_worklog_ids(start_timestamp, end_timestamp, project_key, auth):
@@ -216,4 +216,4 @@ def convert_to_unix_timestamp_ms(date_string: str, date_format: str = '%Y-%m-%d 
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
