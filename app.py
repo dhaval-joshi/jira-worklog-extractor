@@ -35,14 +35,24 @@ def index():
 @app.route('/login', methods=['POST'])
 def login():
     try:
+        # if request.json.get('url') is not None and request.json.get('url') != '':
+        #     url = f'https://{request.json.get('url')}'
+        # else:
+        #     url = JIRA_URL
+        url = f'https://{request.json.get('url')}'
+
         email = request.json.get('email')
         api_token = request.json.get('api_token')
 
         # Attempt to authenticate with Jira
-        response = requests.get(f'{JIRA_URL}/rest/api/3/myself', auth=(email, api_token))
+        # response = requests.get(f'{JIRA_URL}/rest/api/3/myself', auth=(email, api_token))
+        jUrl = f'{url}/rest/api/3/myself'
+        logging.debug(f'jUrl --> {jUrl}')
+        response = requests.get(jUrl, auth=(email, api_token))
 
         if response.status_code == 200:
             session['logged_in'] = True
+            session['url'] = url
             session['user_email'] = email
             session['jira_auth'] = (email, api_token)
             return jsonify({'success': True}), 200
@@ -102,10 +112,17 @@ def fetch_worklogs():
         logging.error(traceback.format_exc())
         return jsonify({'An internal error has occurred!'}), 500
 
+def get_jira_url():
+    # if session['url'] is not None:
+    #     return session['url']
+    # else:
+    #     return JIRA_URL
+    return session['url']
 
 def get_worklog_ids(start_timestamp, end_timestamp, project_key, auth):
     worklog_ids = []
-    next_page = f'{JIRA_URL}/rest/api/3/worklog/updated?since={start_timestamp}&until={end_timestamp}'
+    # next_page = f'{JIRA_URL}/rest/api/3/worklog/updated?since={start_timestamp}&until={end_timestamp}'
+    next_page = f'{get_jira_url()}/rest/api/3/worklog/updated?since={start_timestamp}&until={end_timestamp}'
 
     while next_page:
         response = requests.get(next_page, auth=auth)
@@ -126,7 +143,8 @@ def get_worklogs_details(worklog_ids, auth):
 
     for i in range(0, len(worklog_ids), chunk_size):
         chunk_ids = worklog_ids[i:i + chunk_size]
-        response = requests.post(f'{JIRA_URL}/rest/api/3/worklog/list', json={'ids': chunk_ids}, auth=auth)
+        # response = requests.post(f'{JIRA_URL}/rest/api/3/worklog/list', json={'ids': chunk_ids}, auth=auth)
+        response = requests.post(f'{get_jira_url()}/rest/api/3/worklog/list', json={'ids': chunk_ids}, auth=auth)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch worklogs details: {response.text}")
         worklogs_details.extend(response.json())
@@ -168,16 +186,16 @@ def filter_worklogs_and_fetch_issue_keys(worklogs, user_ids, fltr_project_key):
             user_worklogs[user_id] = {'displayName': worklog['user'], 'worklogs': []}
 
         user_worklogs[user_id]['worklogs'].append({
+            'projectKey': project_key,
+            'projectName': project_name,
+            'issueId': issue_id,
             'ticket': issue_key,
             'summary': summary,
-            'projectName': project_name,
-            'projectKey': project_key,
             'timeSpent': worklog['timeSpent'],
             'started': worklog['started']
         })
 
     return user_worklogs
-
 
 def get_issue_details(issue_ids, fltr_project_key):
     issue_details = {}
@@ -190,7 +208,8 @@ def get_issue_details(issue_ids, fltr_project_key):
         if fltr_project_key != '':
             jql += f' AND project = {fltr_project_key}'
 
-        response = requests.post(f'{JIRA_URL}/rest/api/3/search', json={'jql': jql, 'fields': ['key', 'project', 'summary']}, auth=session['jira_auth'])
+        # response = requests.post(f'{JIRA_URL}/rest/api/3/search', json={'jql': jql, 'fields': ['key', 'project', 'summary']}, auth=session['jira_auth'])
+        response = requests.post(f'{get_jira_url()}/rest/api/3/search', json={'jql': jql, 'fields': ['key', 'project', 'summary']}, auth=session['jira_auth'])
 
         if response.status_code != 200:
             raise Exception(f"Failed to fetch issue details: {response.text}")
