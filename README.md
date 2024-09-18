@@ -58,7 +58,7 @@ This Python application extracts worklogs from Jira using Jira's REST API (v3) w
 	2. Click on `Create API Token`
 	3. Enter `Label` for this token
 	4. Click on `Create`
-	5. Copy Token ##### (you will not be able to see that beyond this dialog)
+	5. Copy Token **(you will not be able to see that beyond this dialog)**
 	6. Store it securely and use this token to login
 
 6. **Running the App**
