@@ -53,7 +53,13 @@ This Python application extracts worklogs from Jira using Jira's REST API (v3) w
 - You will need the following credentials to access Jira’s REST API:
 - Jira Base URL (e.g., https://your-domain.atlassian.net)
 - Jira Username (email)
-- Jira API Token (generate from Jira settings)
+- Jira API Token (instructions below)
+	1. Go to API Token Page of Atlassian (you should be logged-in to Jira) -- `https://id.atlassian.com/manage-profile/security/api-tokens`
+	2. Click on `Create API Token`
+	3. Enter `Label` for this token
+	4. Click on `Create`
+	5. Copy Token ##### (you will not be able to see that beyond this dialog)
+	6. Store it securely and use this token to login
 
 6. **Running the App**
 You can run the app locally using Python:
