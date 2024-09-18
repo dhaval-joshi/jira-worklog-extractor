@@ -73,8 +73,8 @@ Once the app is running, you can access it via http://localhost:5000
 
 #### Fetch Worklogs
 -   Enter following details to fetch worklogs: 
-	1. ##### Project Key `[optional]`  
-	2. ##### User(s) `[mandatory]`
+	1. ##### User(s) `[mandatory]`
+	2. ##### Project Key `[optional]`  
 	3. ##### Date Range (Strat & End Dates) `[mandatory]`
 -   The fetched worklogs are displayed in a data table with User Display Name, Project Key, Ticket Key, Summary, Time Spent (hours), and Worklog Date.
 -   Footer of the data table contains `Page Total` and `Total` hours
