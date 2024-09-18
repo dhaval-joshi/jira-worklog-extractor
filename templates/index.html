@@ -7,14 +7,17 @@
     <title>Jira Worklogs Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js" integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"
+        integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg=" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.0.1/js/dataTables.buttons.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.0.1/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.0.1/js/buttons.print.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
         body {
             font-size: 10px;
@@ -29,14 +32,12 @@
             white-space: nowrap;
         }
 
-        /* Spinner styling */
         .spinner-border {
             width: 3rem;
             height: 3rem;
             border-width: 0.3rem;
         }
 
-        /* Modal styling */
         #loadingModal .modal-dialog {
             max-width: 100px;
             margin: 0 auto;
@@ -50,7 +51,6 @@
             opacity: 1;
         }
 
-        /* Styling for the login/logout button */
         .navbar {
             margin-bottom: 20px;
         }
@@ -58,11 +58,84 @@
         .login-btn {
             float: right;
         }
+
+        .select2.select2-container {
+            width: 100% !important;
+            font-family: inherit !important;
+            font-size: 1rem !important;
+
+        }
+
+        .select2-results__option,
+        .select2-results__message {
+            background-color: #f4f4f4;
+            font-size: 0.8rem !important;
+        }
+
+        .select2-search__field {
+            height: 1.5rem !important;
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--multiple {
+            border: solid rgb(154, 193, 249) 1px;
+            outline: 0;
+            box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25);
+        }
+        
+        
+        .select2-container--default .select2-selection--multiple {
+            border: solid rgb(222, 226, 230) 1px;
+        }
+
+        .select2.select2-container .select2-selection--multiple .select2-selection__choice {
+            background-color: #f8f8f8;
+            border: 2px solid #0d6efd;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 30px;
+            margin: 6px 6px 0 0;
+            padding: 0 14px 3px 29px;
+            position: relative;
+            background-color: white;
+            color: black !important;
+        }
+
+        .select2-selection__choice__display {
+            cursor: default;
+            padding-left: 3px;
+            padding-right: 5px;
+
+        }
+
+        .select2.select2-container .select2-selection--multiple .select2-selection__choice .select2-selection__choice__remove {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 22px;
+            width: 37px;
+            margin: 0 !important;
+            text-align: center;
+            color: red !important;
+            font-weight: bold;
+            font-size: 16px;
+            border-right: none;
+            background: transparent;
+        }
+
+        .select2-container .select2-dropdown .select2-results ul .select2-results__option--highlighted[aria-selected] {
+            background-color: #0d6efd;
+        }
+
+        .btn-xs {
+            padding: .25rem .4rem;
+            font-size: .875rem;
+            line-height: .5;
+            border-radius: .2rem;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Navigation bar with Login/Logout button -->
     <nav class="navbar navbar-light bg-light">
         <div class="container-fluid">
             <a class="navbar-brand">Jira Worklog Extractor</a>
@@ -77,26 +150,31 @@
             </div>
             <form id="worklogForm" class="mb-4">
                 <div class="row">
+                    <div class="form-group">
+                        <label for="jiraUsers" class="form-label"><strong
+                                class="text-danger">&nbsp;*&nbsp;</strong>Search Jira Users</label>
+                        <select id="jiraUsers"  class="form-control" multiple required oninvalid="this.setCustomValidity('Select at least one user')" oninput="setCustomValidity('')" ></select>
+                    </div>
+                </div>
+                <div>&nbsp;</div>
+                <div class="row">
                     <div class="col-md-4">
                         <label for="project_key" class="form-label">Project Key</label>
                         <input type="text" class="form-control" id="project_key" placeholder="Enter project key">
                     </div>
+                    <div class="col-md-2">
+                        <label for="start_date" class="form-label"><strong
+                                class="text-danger">&nbsp;*&nbsp;</strong>Start Date</label>
+                        <input type="date" class="form-control" id="start_date" required oninvalid="this.setCustomValidity('Select start date')" oninput="setCustomValidity('')" >
+                    </div>
+                    <div class="col-md-2">
+                        <label for="end_date" class="form-label"><strong class="text-danger">&nbsp;*&nbsp;</strong>End
+                            Date</label>
+                        <input type="date" class="form-control" id="end_date" required oninvalid="this.setCustomValidity('Select end date')" oninput="setCustomValidity('')" >
+                    </div>
                     <div class="col-md-4">
-                        <label for="users" class="form-label">User IDs</label>
-                        <input type="text" class="form-control" id="users"
-                            placeholder="Enter user IDs (comma-separated)">
+                        <button type="submit" class="btn btn-primary mt-4 float-md-end">Fetch Worklogs</button>
                     </div>
-                    <div class="col-md-2">
-                        <label for="start_date" class="form-label">Start Date</label>
-                        <input type="date" class="form-control" id="start_date">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="end_date" class="form-label">End Date</label>
-                        <input type="date" class="form-control" id="end_date">
-                    </div>
-                </div>
-                <div class="text-center">
-                    <button type="submit" class="btn btn-primary w-20 mt-3">Fetch Worklogs</button>
                 </div>
             </form>
             <div class="text-center">
@@ -129,7 +207,6 @@
         </div>
     </div>
 
-    <!-- Modal for login -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -140,18 +217,21 @@
                 <div class="modal-body">
                     <form id="loginForm">
                         <div class="mb-3">
-                            <label for="jiraUrl" class="form-label"><strong class="text-danger">&nbsp;*&nbsp;</strong>Jira URL</label>&nbsp;<label
+                            <label for="jiraUrl" class="form-label"><strong
+                                    class="text-danger">&nbsp;*&nbsp;</strong>Jira URL</label>&nbsp;<label
                                 class="text-primary">EX.:
                                 <strong>your-company.atlassian.net</strong></label>&nbsp;<label class="text-warning">DO
                                 NOT add http:// or https://</label>&nbsp;<label class="text-primary"></label>
                             <input type="text" class="form-control" id="jiraUrl" required>
                         </div>
                         <div class="mb-3">
-                            <label for="jiraEmail" class="form-label"><strong class="text-danger">&nbsp;*&nbsp;</strong>Jira Email</label>
+                            <label for="jiraEmail" class="form-label"><strong
+                                    class="text-danger">&nbsp;*&nbsp;</strong>Jira Email</label>
                             <input type="email" class="form-control" id="jiraEmail" required>
                         </div>
                         <div class="mb-3">
-                            <label for="jiraApiToken" class="form-label"><strong class="text-danger">&nbsp;*&nbsp;</strong>Jira Api Token</label>
+                            <label for="jiraApiToken" class="form-label"><strong
+                                    class="text-danger">&nbsp;*&nbsp;</strong>Jira Api Token</label>
                             <input type="password" class="form-control" id="jiraApiToken" required>
                         </div>
                         <button type="submit" class="btn btn-primary">Login</button>
@@ -161,7 +241,6 @@
         </div>
     </div>
 
-    <!-- Loading Spinner Modal -->
     <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
         data-bs-keyboard="false">
         <div class="modal-dialog">
@@ -182,11 +261,6 @@
                 "order": [[1, "asc"], [2, "asc"], [8, "asc"]],
                 dom: 'Bfrtip', // Define the button placement
                 buttons: [
-                    // {
-                    //     extend: 'csvHtml5', // Enable CSV export
-                    //     text: 'Export to CSV', // Custom button text
-                    //     className: 'btn btn-outline-dark btn-sm', // Add Bootstrap class
-                    // }
                     {
                         extend: 'excel', // Enable Excel export
                         text: 'Export to Excel', // Custom button text
@@ -213,9 +287,34 @@
 
             table.columns([0, 3, 4]).visible(false);
 
-            // Check login status
+            $('#jiraUsers').select2({
+                placeholder: 'Start typing to search users',
+                minimumInputLength: 3, // Require at least 3 characters to start the search
+                tokenSeparators: [','],
+                ajax: {
+                    url: '/user-search', // Jira user search
+                    dataType: 'json',
+                    delay: 250, // Debounce for better performance
+                    data: function (params) {
+                        return {
+                            query: params.term 
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.map(function (user) {
+                                return {
+                                    id: user.accountId, // Send the Jira user ID to the backend
+                                    text: user.displayName // Show the user's Display Name in the dropdown
+                                };
+                            })
+                        };
+                    },
+                    cache: true
+                },
+            });
+
             function checkLoginStatus() {
-                // Call the server to verify if the user is logged in
                 $.get('/check_login', function (data) {
                     isLoggedIn = data.logged_in;
                     updateLoginButton();
@@ -227,7 +326,6 @@
 
             checkLoginStatus();
 
-            // Update login/logout button text
             function updateLoginButton() {
                 if (isLoggedIn) {
                     $('#loginLogoutBtn').text('Logout').addClass('btn-outline-danger').removeClass('btn-outline-primary');
@@ -236,20 +334,18 @@
                 }
             }
 
-            // Handle login
             $('#loginForm').on('submit', function (event) {
                 event.preventDefault();
                 var url = $('#jiraUrl').val();
                 var email = $('#jiraEmail').val();
                 var apiToken = $('#jiraApiToken').val();
                 const login_data = JSON.stringify({ url: url, email: email, api_token: apiToken });
-                // console.log(login_data)
-                // Send login request to server
+
                 $.ajax({
-                    url: '/login',  // Update the endpoint URL if necessary
+                    url: '/login',  
                     type: 'POST',
-                    contentType: 'application/json',  // Setting content type to JSON
-                    data: login_data,  // Stringify the data to send it as JSON
+                    contentType: 'application/json',  
+                    data: login_data,  
                     success: function (data) {
                         if (data.success) {
                             isLoggedIn = true;
@@ -266,10 +362,8 @@
                 });
             });
 
-            // Handle logout
             $('#loginLogoutBtn').on('click', function () {
                 if (isLoggedIn) {
-                    // Handle logout
                     $.post('/logout', function (data) {
                         if (data.success) {
                             isLoggedIn = false;
@@ -277,16 +371,15 @@
                         }
                     });
                 } else {
-                    // Show login modal
                     $('#loginModal').modal('show');
                 }
             });
 
-            // Fetch worklogs when the form is submitted
             $('#worklogForm').on('submit', function (event) {
                 event.preventDefault();
 
                 $('#err_message').text('')
+                $('#no_records').text('')
                 $('#no_records').text('')
 
                 if (!isLoggedIn) {
@@ -298,6 +391,8 @@
                 table.clear();
                 var project_key = $('#project_key').val();
                 var users = $('#users').val();
+                var users = $('#jiraUsers').select2("val").join(",");
+                users = users === '' ? undefined : users;
                 var start_date = $('#start_date').val();
                 var end_date = $('#end_date').val();
 
@@ -342,7 +437,7 @@
                             }
 
                             table.columns.adjust().draw(); // Recalculate the subtotal
-
+                            table.search('').draw();
                             hideModal();
                         }
                     })
@@ -357,6 +452,8 @@
                     })
 
             });
+
+
         });
 
 

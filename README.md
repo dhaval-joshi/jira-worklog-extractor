@@ -42,12 +42,10 @@ This Python application extracts worklogs from Jira using Jira's REST API (v3) w
 ```json
 	{
 		"DEBUG": true,
-		"JIRA_URL": "https://your-company.atlassian.net",
 		"APP_SECRET_KEY": "<YOUR_CUSTOM_APP_SECRET_KEY>",
 		"LOG_FILE_NAME": "jira_app_logs.txt"
 	}
 ```
-- Replace `JIRA_URL` with your Jira instance URL.
 - Set `APP_SECRET_KEY` to a custom secret key.
 - `LOG_FILE_NAME` is the file where logs will be stored. This file is saved under `_logs` folder in the root directory
 
@@ -76,9 +74,9 @@ Once the app is running, you can access it via http://localhost:5000
 #### Fetch Worklogs
 -   Enter following details to fetch worklogs: 
 	1. ##### Project Key `[optional]`  
-	2. ##### User IDs `[mandatory]`
-	3. ##### Date Range `[mandatory]`
--   The fetched worklogs are displayed in a data table with ticket numbers, summaries, project names, time spent (hours), and start times.
+	2. ##### User(s) `[mandatory]`
+	3. ##### Date Range (Strat & End Dates) `[mandatory]`
+-   The fetched worklogs are displayed in a data table with User Display Name, Project Key, Ticket Key, Summary, Time Spent (hours), and Worklog Date.
 -   Footer of the data table contains `Page Total` and `Total` hours
 -   Filtering records will update the `Page Total`
 

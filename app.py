@@ -17,9 +17,6 @@ app = Flask(__name__)
 app.config.update(config_data)
 app.secret_key = app.config['APP_SECRET_KEY']  # Needed to manage sessions
 
-# Jira URL
-JIRA_URL = app.config['JIRA_URL']
-
 # Set up logging
 logging.basicConfig(filename=f'_logs\\{app.config['LOG_FILE_NAME']}', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -94,6 +91,7 @@ def fetch_worklogs():
         if not user_ids:
             return jsonify({'error': 'No users provided'}), 400
 
+        # logging.debug(f'st--{start_date} | et--{end_date}')
         start_timestamp = convert_to_unix_timestamp_ms(f'{start_date} 00:00:00')
         end_timestamp = convert_to_unix_timestamp_ms(f'{end_date} 23:59:59')
 
@@ -111,6 +109,31 @@ def fetch_worklogs():
     except Exception as e:
         logging.error(traceback.format_exc())
         return jsonify({'An internal error has occurred!'}), 500
+
+
+@app.route('/user-search', methods=['GET'])
+def search_jira_users():
+    query = request.args.get('query', '')
+    
+    # Validate that the query has at least 3 characters
+    if len(query) < 3:
+        return jsonify({'error': 'Query must be at least 3 characters long.'}), 400
+    
+    auth = session['jira_auth']  # Get Jira auth from session
+
+    try:
+        response = requests.get(f'{get_jira_url()}/rest/api/3/user/search', params={'query': query}, auth=auth)
+        
+        # Check if the response from Jira was successful
+        if response.status_code == 200:
+            return jsonify(response.json())  # Return the Jira users
+        else:
+            return jsonify({'error': 'Error fetching users from Jira.'}), 500
+    
+    except Exception as e:
+        logging.error(traceback.format_exc())
+        return jsonify({'An internal error has occurred while fetching users!'}), 500
+
 
 def get_jira_url():
     # if session['url'] is not None:
