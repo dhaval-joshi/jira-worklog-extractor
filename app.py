@@ -6,6 +6,7 @@ import pytz
 import logging
 import json
 import os
+import pandas as pd
 
 if not os.path.exists('_logs'):
         os.makedirs('_logs')

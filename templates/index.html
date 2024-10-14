@@ -81,8 +81,8 @@
             outline: 0;
             box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25);
         }
-        
-        
+
+
         .select2-container--default .select2-selection--multiple {
             border: solid rgb(222, 226, 230) 1px;
         }
@@ -126,6 +126,15 @@
             background-color: #0d6efd;
         }
 
+        .dt-buttons {
+            padding: 10px 0;
+        }
+
+        .dataTables_length,
+        .worklogTable_filter {
+            padding: 10px 0;
+        }
+
         .btn-xs {
             padding: .25rem .4rem;
             font-size: .875rem;
@@ -153,7 +162,9 @@
                     <div class="form-group">
                         <label for="jiraUsers" class="form-label"><strong
                                 class="text-danger">&nbsp;*&nbsp;</strong>Search Jira Users</label>
-                        <select id="jiraUsers"  class="form-control" multiple required oninvalid="this.setCustomValidity('Select at least one user')" oninput="setCustomValidity('')" ></select>
+                        <select id="jiraUsers" class="form-control" multiple required
+                            oninvalid="this.setCustomValidity('Select at least one user')"
+                            oninput="setCustomValidity('')"></select>
                     </div>
                 </div>
                 <div>&nbsp;</div>
@@ -165,12 +176,14 @@
                     <div class="col-md-2">
                         <label for="start_date" class="form-label"><strong
                                 class="text-danger">&nbsp;*&nbsp;</strong>Start Date</label>
-                        <input type="date" class="form-control" id="start_date" required oninvalid="this.setCustomValidity('Select start date')" oninput="setCustomValidity('')" >
+                        <input type="date" class="form-control" id="start_date" required
+                            oninvalid="this.setCustomValidity('Select start date')" oninput="setCustomValidity('')">
                     </div>
                     <div class="col-md-2">
                         <label for="end_date" class="form-label"><strong class="text-danger">&nbsp;*&nbsp;</strong>End
                             Date</label>
-                        <input type="date" class="form-control" id="end_date" required oninvalid="this.setCustomValidity('Select end date')" oninput="setCustomValidity('')" >
+                        <input type="date" class="form-control" id="end_date" required
+                            oninvalid="this.setCustomValidity('Select end date')" oninput="setCustomValidity('')">
                     </div>
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-primary mt-4 float-md-end">Fetch Worklogs</button>
@@ -259,7 +272,7 @@
             var isLoggedIn = false; // Initial state, to be updated by the server or login status
             var table = $('#worklogTable').DataTable({
                 "order": [[1, "asc"], [2, "asc"], [8, "asc"]],
-                dom: 'Bfrtip', // Define the button placement
+                dom: 'Blfrtip', // Define the button placement
                 buttons: [
                     {
                         extend: 'excel', // Enable Excel export
@@ -297,7 +310,7 @@
                     delay: 250, // Debounce for better performance
                     data: function (params) {
                         return {
-                            query: params.term 
+                            query: params.term
                         };
                     },
                     processResults: function (data) {
@@ -342,10 +355,10 @@
                 const login_data = JSON.stringify({ url: url, email: email, api_token: apiToken });
 
                 $.ajax({
-                    url: '/login',  
+                    url: '/login',
                     type: 'POST',
-                    contentType: 'application/json',  
-                    data: login_data,  
+                    contentType: 'application/json',
+                    data: login_data,
                     success: function (data) {
                         if (data.success) {
                             isLoggedIn = true;
@@ -438,6 +451,10 @@
 
                             table.columns.adjust().draw(); // Recalculate the subtotal
                             table.search('').draw();
+
+
+                            $('#worklogTable').removeStyle('width');
+
                             hideModal();
                         }
                     })
@@ -452,10 +469,19 @@
                     })
 
             });
-
-
         });
 
+        (function ($) {
+            $.fn.removeStyle = function (style) {
+                var search = new RegExp(style + '[^;]+;?', 'g');
+
+                return this.each(function () {
+                    $(this).attr('style', function (i, style) {
+                        return style && style.replace(search, '');
+                    });
+                });
+            };
+        }(jQuery));
 
         function hideModal() {
 
