@@ -53,7 +53,7 @@ coverage.xml
 .vscode/
 
 # Ignored Assets
-assets/.ignore
+_assets/.ignore
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
