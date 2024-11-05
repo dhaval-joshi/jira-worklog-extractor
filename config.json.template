@@ -1,5 +1,9 @@
 {
     "DEBUG": true,
     "APP_SECRET_KEY": "<YOUR_CUSTOM_APP_SECRET_KEY>",
-    "LOG_FILE_NAME": "jira_app_logs.txt"
+    "LOG_FILE_NAME": "jira_app_logs.txt", 
+    "USER_GROUPS": {
+        "Project 01 Team": "619c8433b3idkr906aaf74d0,612379261827d100e039wi28,6094930de03a00697e1859", 
+        "Project 02 Team": "619c4933b3idkr906aaf74d0,612379101827d100e039wi28,6094933le03a00697e1859" 
+    }
 }

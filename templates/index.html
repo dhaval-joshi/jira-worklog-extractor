@@ -141,6 +141,10 @@
             line-height: .5;
             border-radius: .2rem;
         }
+
+        .btn-group {
+    display: inline-block !important;
+}
     </style>
 </head>
 
@@ -159,10 +163,48 @@
             </div>
             <form id="worklogForm" class="mb-4">
                 <div class="row">
+                    <label for="jiraUsers" class="form-label"><strong
+                        class="text-danger">&nbsp;*&nbsp;</strong>Select a User Group or Search Jira Users</label>
+                        <div class="btn-group mb-1" role="group" aria-label="Basic radio toggle button group">
+                            <input type="radio" class="btn-check" name="selected_user_group" id="team_0" autocomplete="off" value="___none___" checked>
+                            <label class="btn btn-xs btn-outline-primary py-2" for="team_0">None</label>
+
+                            {% for ug, members in user_groups.items() %}
+                            <input type="radio" class="btn-check" name="selected_user_group" id="team_{{ loop.index }}" autocomplete="off" value="{{ ug }}">
+                            <label class="btn btn-xs btn-outline-primary py-2" for="team_{{ loop.index }}">{{ ug }}</label>
+                            {% endfor %}
+                            <!-- <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="btnradio2">Radio 2</label>
+                          
+                            <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="btnradio3">Radio 3</label> -->
+                          </div>
+                    <!-- <div class="mb-3">
+                        <div id="teamOptions" class="btn-group" role="group" aria-label="Basic outlined example">
+                            {% for ug, members in user_groups.items() %}
+                            <div style="display:inline;" class="mx-1">
+                                <input class="btn-check"  type="radio" name="selected_user_group" id="team_{{ loop.index }}" value="{{ ug }}">
+                                <label class="btn btn-outline-primary" for="team_{{ loop.index }}">
+                                    {{ ug }}
+                                </label>
+                            </div>
+                            {% endfor %}
+
+                        </div>
+                    <div id="teamOptions">
+                            {% for ug, members in user_groups.items() %}
+                            <div style="display:inline;" class="mx-1">
+                                <input class="btn-check"  type="radio" name="selected_user_group" id="team_{{ loop.index }}" value="{{ ug }}">
+                                <label class="btn btn-xs btn-outline-default  p-2" for="team_{{ loop.index }}">
+                                    {{ ug }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                </div> -->
+                <div class="row">
                     <div class="form-group">
-                        <label for="jiraUsers" class="form-label"><strong
-                                class="text-danger">&nbsp;*&nbsp;</strong>Search Jira Users</label>
-                        <select id="jiraUsers" class="form-control" multiple required
+                        <select id="jiraUsers" class="form-control" multiple
                             oninvalid="this.setCustomValidity('Select at least one user')"
                             oninput="setCustomValidity('')"></select>
                     </div>
@@ -271,6 +313,7 @@
         $(document).ready(function () {
             var isLoggedIn = false; // Initial state, to be updated by the server or login status
             var table = $('#worklogTable').DataTable({
+                "pageLength": 25,
                 "order": [[1, "asc"], [2, "asc"], [8, "asc"]],
                 dom: 'Blfrtip', // Define the button placement
                 buttons: [
@@ -292,7 +335,7 @@
                     var pageTotal = api.column(timeSpentColIdx, { page: 'current' }).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    $(api.column(7).footer()).html(
+                    $(api.column(timeSpentColIdx).footer()).html(
                         '<div class="text-center">Page Total: ' + pageTotal.toFixed(2) + ' </div><hr class="footer_hr" /><div class="text-center"> Total: ' + total.toFixed(2) + '</div>'
                     );
                 }
@@ -363,7 +406,8 @@
                         if (data.success) {
                             isLoggedIn = true;
                             $('#loginModal').modal('hide');
-                            updateLoginButton();
+                            location.reload();
+                            // updateLoginButton();
                         } else {
                             alert('Login failed');
                         }
@@ -402,6 +446,7 @@
 
                 showModal();
                 table.clear();
+                const selected_user_group = $('input[name="selected_user_group"]:checked').val();
                 var project_key = $('#project_key').val();
                 var users = $('#users').val();
                 var users = $('#jiraUsers').select2("val").join(",");
@@ -414,7 +459,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ project_key, users, start_date, end_date }),
+                    body: JSON.stringify({ project_key, selected_user_group, users, start_date, end_date }),
                 })
                     .then((response) => {
                         if (response.ok) {

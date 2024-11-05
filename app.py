@@ -6,13 +6,14 @@ import pytz
 import logging
 import json
 import os
-import pandas as pd
 
 if not os.path.exists('_logs'):
         os.makedirs('_logs')
 
 with open('config.json') as config_file:
     config_data = json.load(config_file)
+    
+user_groups = config_data.get('USER_GROUPS', {})
 
 app = Flask(__name__)
 app.config.update(config_data)
@@ -25,25 +26,23 @@ logging.basicConfig(filename=f'_logs\\{app.config['LOG_FILE_NAME']}', level=logg
 @app.route('/')
 def index():
     if 'logged_in' in session:
-        return render_template('index.html', logged_in=True, user_email=session['user_email'])
+        return render_template('index.html', logged_in=True, user_email=session['user_email'], user_groups=user_groups)
     else:
-        return render_template('index.html', logged_in=False)
+        return render_template('index.html', logged_in=False, user_groups={})
 
 
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        # if request.json.get('url') is not None and request.json.get('url') != '':
-        #     url = f'https://{request.json.get('url')}'
-        # else:
-        #     url = JIRA_URL
         url = f'https://{request.json.get('url')}'
 
         email = request.json.get('email')
         api_token = request.json.get('api_token')
 
         # Attempt to authenticate with Jira
-        # response = requests.get(f'{JIRA_URL}/rest/api/3/myself', auth=(email, api_token))
+        '''
+        response = requests.get(f'{JIRA_URL}/rest/api/3/myself', auth=(email, api_token))
+        '''
         jUrl = f'{url}/rest/api/3/myself'
         logging.debug(f'jUrl --> {jUrl}')
         response = requests.get(jUrl, auth=(email, api_token))
@@ -65,11 +64,13 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
+    logging.debug("user logged out, session cleared.")
     return jsonify({'success': True}), 200
 
 
 @app.route('/check_login', methods=['GET'])
 def check_login():
+    logging.debug("checking if user is logged in.")
     return jsonify({'logged_in': 'jira_auth' in session and session['jira_auth'] is not None}), 200
 
 
@@ -82,6 +83,7 @@ def fetch_worklogs():
 
     try:
         req_json = request.json
+        selected_user_group = request.json.get('selected_user_group', '')
         proj_key = req_json.get('project_key', '')
         project_key = proj_key.upper()
         users = req_json.get('users', '')
@@ -89,10 +91,19 @@ def fetch_worklogs():
         end_date = req_json.get('end_date', '2024-12-31')
 
         user_ids = [user.strip() for user in users.split(',')]
-        if not user_ids:
-            return jsonify({'error': 'No users provided'}), 400
+        
+        # Validate the user ids and selected team
+        if (user_ids == "") and (selected_user_group not in user_groups):
+            return jsonify({'error': 'Either users or user group to be selected'}), 400
 
-        # logging.debug(f'st--{start_date} | et--{end_date}')
+        if selected_user_group in user_groups:
+            user_ids = user_groups[selected_user_group]
+        else:
+            '''
+            This is helpful if you want to create a user group out of the users you have selected. 
+            '''
+            logging.debug(f'User IDs: {user_ids}')  
+
         start_timestamp = convert_to_unix_timestamp_ms(f'{start_date} 00:00:00')
         end_timestamp = convert_to_unix_timestamp_ms(f'{end_date} 23:59:59')
 
@@ -145,7 +156,6 @@ def get_jira_url():
 
 def get_worklog_ids(start_timestamp, end_timestamp, project_key, auth):
     worklog_ids = []
-    # next_page = f'{JIRA_URL}/rest/api/3/worklog/updated?since={start_timestamp}&until={end_timestamp}'
     next_page = f'{get_jira_url()}/rest/api/3/worklog/updated?since={start_timestamp}&until={end_timestamp}'
 
     while next_page:
@@ -167,7 +177,6 @@ def get_worklogs_details(worklog_ids, auth):
 
     for i in range(0, len(worklog_ids), chunk_size):
         chunk_ids = worklog_ids[i:i + chunk_size]
-        # response = requests.post(f'{JIRA_URL}/rest/api/3/worklog/list', json={'ids': chunk_ids}, auth=auth)
         response = requests.post(f'{get_jira_url()}/rest/api/3/worklog/list', json={'ids': chunk_ids}, auth=auth)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch worklogs details: {response.text}")
@@ -223,7 +232,8 @@ def filter_worklogs_and_fetch_issue_keys(worklogs, user_ids, fltr_project_key):
 
 def get_issue_details(issue_ids, fltr_project_key):
     issue_details = {}
-    chunk_size = 1000
+    # chunk_size = 1000
+    chunk_size = 45
 
     for i in range(0, len(issue_ids), chunk_size):
         chunk_ids = issue_ids[i:i + chunk_size]
@@ -232,7 +242,6 @@ def get_issue_details(issue_ids, fltr_project_key):
         if fltr_project_key != '':
             jql += f' AND project = {fltr_project_key}'
 
-        # response = requests.post(f'{JIRA_URL}/rest/api/3/search', json={'jql': jql, 'fields': ['key', 'project', 'summary']}, auth=session['jira_auth'])
         response = requests.post(f'{get_jira_url()}/rest/api/3/search', json={'jql': jql, 'fields': ['key', 'project', 'summary']}, auth=session['jira_auth'])
 
         if response.status_code != 200:
