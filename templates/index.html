@@ -424,7 +424,8 @@
                     $.post('/logout', function (data) {
                         if (data.success) {
                             isLoggedIn = false;
-                            updateLoginButton();
+                            location.reload();
+                            // updateLoginButton();
                         }
                     });
                 } else {
