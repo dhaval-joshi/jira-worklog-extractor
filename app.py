@@ -19,8 +19,8 @@ app = Flask(__name__)
 app.config.update(config_data)
 app.secret_key = app.config['APP_SECRET_KEY']  # Needed to manage sessions
 
-# Set up logging
-logging.basicConfig(filename=f'_logs\\{app.config['LOG_FILE_NAME']}', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging 
+logging.basicConfig(filename=f'_logs\\{app.config["LOG_FILE_NAME"]}', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 @app.route('/')
@@ -34,7 +34,7 @@ def index():
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        url = f'https://{request.json.get('url')}'
+        url = f'https://{request.json.get("url")}'
 
         email = request.json.get('email')
         api_token = request.json.get('api_token')
