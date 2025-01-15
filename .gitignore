@@ -66,4 +66,7 @@ _assets/.ignore
 _logs/
 
 # Application Configuration
-config.json
+*config.json
+
+# Do not include files in this folder
+___do_not_include/
